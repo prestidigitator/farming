@@ -7,6 +7,7 @@ farming = {}
 farming.mod = "redo"
 farming.hoe_on_use = default.hoe_on_use
 
+local GrowthModel = dofile(minetest.get_modpath("farming").."/GrowthModel.lua")
 dofile(minetest.get_modpath("farming").."/soil.lua")
 dofile(minetest.get_modpath("farming").."/hoes.lua")
 dofile(minetest.get_modpath("farming").."/grass.lua")
@@ -29,6 +30,10 @@ dofile(minetest.get_modpath("farming").."/beanpole.lua")
 dofile(minetest.get_modpath("farming").."/donut.lua")
 dofile(minetest.get_modpath("farming").."/mapgen.lua")
 dofile(minetest.get_modpath("farming").."/compatibility.lua") -- Farming Plus compatibility
+
+-- Used to grow plants with a model of time independent of when the ABM actually runs.
+local growth_model = GrowthModel(13, 1000,  -- light range
+                                 160);      -- average seconds per stage
 
 -- Place Seeds on Soil
 
@@ -64,6 +69,7 @@ function farming.place_seed(itemstack, placer, pointed_thing, plantname)
 	-- add the node and remove 1 item from the itemstack
 	if not minetest.is_protected(pt.above, placer:get_player_name()) then
 		minetest.add_node(pt.above, {name=plantname})
+		growth_model:growth_stages(pt.above, 0, 0);  -- Marks initial planting time to avoid extra ABM period
 		if not minetest.setting_getbool("creative_mode") then
 			itemstack:take_item()
 		end
@@ -73,41 +79,61 @@ end
 
 -- Single ABM Handles Growing of All Plants
 
+--- Returns (plant_name, stage, max_stage), or nil if pos isn't loaded
+local function examine_plant(node)
+	local name = node and node.name
+	if not name or name == "ignore" then return end
+
+	local sep_pos = name:find("_[^_]+$")
+
+	local plant, stage
+	if sep_pos and sep_pos > 1 then
+		stage = tonumber(name:sub(sep_pos+1));
+		if stage and stage >= 0 then
+			plant = name:sub(1, sep_pos-1);
+		else
+			plant, stage = name, 0
+		end
+	else
+		plant, stage = name, 0
+	end
+
+	local max_stage = stage
+	while minetest.registered_nodes[plant.."_"..(max_stage+1)] do
+		max_stage = max_stage+1
+	end
+
+	return plant, stage, max_stage
+end
+
 minetest.register_abm({
 	nodenames = {"group:growing"},
 	neighbors = {"farming:soil_wet", "default:jungletree"},
 	interval = 80,
-	chance = 2,
+	chance   = 3,
 
 	action = function(pos, node)
 
 		-- get node type (e.g. farming:wheat_1)
-		local plant = node.name:split("_")[1].."_"
-		local numb = node.name:split("_")[2]
-
-		-- check if fully grown
-		if not minetest.registered_nodes[plant..(numb + 1)] then return end
+		local plant, stage, max_stage = examine_plant(node);
+		if not plant or stage >= max_stage then return end
 		
 		-- Check for Cocoa Pod
-		if plant == "farming:cocoa_"
-		and minetest.find_node_near(pos, 1, {"default:jungletree", "moretrees:jungletree_leaves_green"}) then
-
-			if minetest.get_node_light(pos) < 13 then return end
-
+		if plant == "farming:cocoa" then
+			if not minetest.find_node_near(pos, 1, {"default:jungletree", "moretrees:jungletree_leaves_green"}) then
+				return
+			end
 		else
-		
 			-- check if on wet soil
 			pos.y = pos.y-1
 			if minetest.get_node(pos).name ~= "farming:soil_wet" then return end
 			pos.y = pos.y+1
-		
-			-- check light
-			if minetest.get_node_light(pos) < 13 then return end
-		
 		end
-		
-		-- grow
-		minetest.set_node(pos, {name=plant..(numb + 1)})
+
+		local growth = growth_model:growth_stages(pos, stage, max_stage);
+		if growth > 0 then
+			minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
+		end
 
 	end
 })
