@@ -143,6 +143,13 @@ function GrowthModel.update()
    SECS_PER_CYCLE = (time_speed > 0 and (24 * 60 * 60 / time_speed)) or nil;
 end;
 
+--- Marks a node as having had its growth evaluated, creating a basis for the
+ -- next growth calculation.
+ --
+function GrowthModel_inst_ops:mark_time(pos)
+   minetest.get_meta(pos):set_float(UPDATE_TIME_META, minetest.get_gametime());
+end;
+
 --- Determines how many stages to grow a plant.
  --
  -- The number of stages is determined by a Poisson distribution, with the
@@ -162,7 +169,6 @@ function GrowthModel_inst_ops:growth_stages(pos, stage, max_stage)
 
    local t1_s = meta:get_float(UPDATE_TIME_META);
    local t2_s = minetest.get_gametime();
-   meta:set_float(UPDATE_TIME_META, t2_s);
 
    if not t1_s or t1_s <= 0 or t2_s <= t1_s then return 0; end;
 

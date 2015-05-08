@@ -69,7 +69,7 @@ function farming.place_seed(itemstack, placer, pointed_thing, plantname)
 	-- add the node and remove 1 item from the itemstack
 	if not minetest.is_protected(pt.above, placer:get_player_name()) then
 		minetest.add_node(pt.above, {name=plantname})
-		growth_model:growth_stages(pt.above, 0, 0);  -- Marks initial planting time to avoid extra ABM period
+		growth_model:mark_time(pt.above);  -- Marks initial planting time to avoid extra ABM period
 		if not minetest.setting_getbool("creative_mode") then
 			itemstack:take_item()
 		end
@@ -117,23 +117,31 @@ minetest.register_abm({
 		-- get node type (e.g. farming:wheat_1)
 		local plant, stage, max_stage = examine_plant(node);
 		if not plant or stage >= max_stage then return end
+
+		local grow = true
 		
 		-- Check for Cocoa Pod
 		if plant == "farming:cocoa" then
 			if not minetest.find_node_near(pos, 1, {"default:jungletree", "moretrees:jungletree_leaves_green"}) then
-				return
+				grow = false
 			end
 		else
 			-- check if on wet soil
 			pos.y = pos.y-1
-			if minetest.get_node(pos).name ~= "farming:soil_wet" then return end
+			if minetest.get_node(pos).name ~= "farming:soil_wet" then
+				grow = false
+			end
 			pos.y = pos.y+1
 		end
 
-		local growth = growth_model:growth_stages(pos, stage, max_stage);
-		if growth > 0 then
-			minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
+		if grow then
+			local growth = growth_model:growth_stages(pos, stage, max_stage);
+			if growth > 0 then
+				minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
+			end
 		end
+
+		growth_model:mark_time(pos);
 
 	end
 })
