@@ -64,7 +64,7 @@ local function day_time(time_game_1, time_game_2, time_day_2)
    if t1_c < -0.5 then
       local nc = math.floor(-t1_c);
       dt_c = dt_c + 0.5*nc;
-      t1_c = tc_1 + nc;
+      t1_c = t1_c + nc;
       dt_c = dt_c + clamp(-t1_c - 0.5, 0, 0.5);
    end;
 
@@ -88,7 +88,7 @@ local function night_time(time_game_1, time_game_2, time_day_2)
    if t1_c < -0.5 then
       local nc = math.floor(-t1_c);
       dt_c = dt_c + 0.5*nc;
-      t1_c = tc_1 + nc;
+      t1_c = t1_c + nc;
       dt_c = dt_c + clamp(-t1_c - 0.5, 0, 0.5);
    end;
 
