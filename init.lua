@@ -106,86 +106,91 @@ local function examine_plant(node)
 	return plant, stage, max_stage
 end
 
--- farming.DEBUG = farming.DEBUG or {};
+local abm_action = function(pos, node)
+	-- get node type (e.g. farming:wheat_1)
+	local plant, stage, max_stage = examine_plant(node);
+	if not plant or stage >= max_stage then return end
 
-local DEBUG_farming_start_time_us = 0;
-local DEBUG_farming_end_time_us   = 0;
-local DEBUG_farming_dt_us         = 0;
-local DEBUG_farming_runs          = 0;
+	local grow = true
+
+	-- Check for Cocoa Pod
+	if plant == "farming:cocoa" then
+		if not minetest.find_node_near(pos, 1, {"default:jungletree", "moretrees:jungletree_leaves_green"}) then
+			grow = false
+		end
+	else
+		-- check if on wet soil
+		pos.y = pos.y-1
+		if minetest.get_node(pos).name ~= "farming:soil_wet" then
+			grow = false
+		end
+		pos.y = pos.y+1
+	end
+
+	if grow then
+		local growth = growth_model:growth_stages(pos, stage, max_stage);
+		if growth > 0 then
+			minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
+		end
+	end
+
+	growth_model:mark_time(pos);
+end
+
+-- farming.DEBUG = farming.DEBUG or {}
+
+local DEBUG_farming_start_time_us = 0
+local DEBUG_farming_end_time_us   = 0
+local DEBUG_farming_dt_us         = 0
+local DEBUG_farming_runs          = 0
+
+local function DEBUG_reportTimes()
+	local us_per_run  = (DEBUG_farming_runs > 0 and
+	                     DEBUG_farming_dt_us/DEBUG_farming_runs) or 0
+	local report_time = (DEBUG_farming_end_time_us -
+	                     DEBUG_farming_start_time_us)/1000000.0
+	print("farming.DEBUG: ABM used "..DEBUG_farming_dt_us.."us over "..
+	      DEBUG_farming_runs.." runs and "..report_time.."s, making "..
+	      us_per_run.."us per run")
+end
+
+local function DEBUG_resetTimes()
+	local t = minetest.get_us_time()
+	DEBUG_farming_start_time_us = t
+	DEBUG_farming_end_time_us   = t
+	DEBUG_farming_dt_us         = 0
+	DEBUG_farming_runs          = 0
+end
+
+local DEBUG_abm_action = function(pos, node)
+	local t0_us = minetest.get_us_time();
+
+	abm_action(pos, node);
+
+	local t1_us = minetest.get_us_time();
+	DEBUG_farming_end_time_us = t1_us;
+	DEBUG_farming_dt_us       = DEBUG_farming_dt_us + (t1_us - t0_us);
+	DEBUG_farming_runs        = DEBUG_farming_runs + 1;
+	local elapsed_us          = t1_us - DEBUG_farming_start_time_us;
+	if DEBUG_farming_runs >= 400 or elapsed_us > 100000000.0 then
+		farming.DEBUG.reportTimes();
+		farming.DEBUG.resetTimes();
+	end;
+end
+
 if farming.DEBUG then
-	function farming.DEBUG.reportTimes()
-		local us_per_run  = (DEBUG_farming_runs > 0 and
-		                     DEBUG_farming_dt_us/DEBUG_farming_runs)
-		                    or 0;
-		local report_time = (DEBUG_farming_end_time_us -
-		                     DEBUG_farming_start_time_us)/1000000.0;
-		print("farming.DEBUG: ABM used "..DEBUG_farming_dt_us.."us over "..
-		      DEBUG_farming_runs.." runs and "..report_time.."s, making "..
-		      us_per_run.."us per run");
-	end;
-	function farming.DEBUG.resetTimes()
-		local t = minetest.get_us_time();
-		DEBUG_farming_start_time_us = t;
-		DEBUG_farming_end_time_us   = t;
-		DEBUG_farming_dt_us         = 0;
-		DEBUG_farming_runs          = 0;
-	end;
-end;
+	farming.DEBUG.reportTimes = DEBUG_reportTimes
+	farming.DEBUG.resetTimes = DEBUG_resetTimes
+end
 
 minetest.register_abm({
 	nodenames = {"group:growing"},
 	neighbors = {"farming:soil_wet", "default:jungletree"},
 	interval = 80,
 	chance   = 3,
-
-	action = function(pos, node)
-		local t0_us;
-		if farming.DEBUG then
-			t0_us = minetest.get_us_time();
-		end;
-
-		-- get node type (e.g. farming:wheat_1)
-		local plant, stage, max_stage = examine_plant(node);
-		if not plant or stage >= max_stage then return end
-
-		local grow = true
-		
-		-- Check for Cocoa Pod
-		if plant == "farming:cocoa" then
-			if not minetest.find_node_near(pos, 1, {"default:jungletree", "moretrees:jungletree_leaves_green"}) then
-				grow = false
-			end
-		else
-			-- check if on wet soil
-			pos.y = pos.y-1
-			if minetest.get_node(pos).name ~= "farming:soil_wet" then
-				grow = false
-			end
-			pos.y = pos.y+1
-		end
-
-		if grow then
-			local growth = growth_model:growth_stages(pos, stage, max_stage);
-			if growth > 0 then
-				minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
-			end
-		end
-
-		growth_model:mark_time(pos);
-
-		if farming.DEBUG then
-			local t1_us = minetest.get_us_time();
-			DEBUG_farming_end_time_us = t1_us;
-			DEBUG_farming_dt_us       = DEBUG_farming_dt_us + (t1_us - t0_us);
-			DEBUG_farming_runs        = DEBUG_farming_runs + 1;
-			local elapsed_us          = t1_us - DEBUG_farming_start_time_us;
-			if DEBUG_farming_runs >= 400 or elapsed_us > 100000000.0 then
-				farming.DEBUG.reportTimes();
-				farming.DEBUG.resetTimes();
-			end;
-		end;
-	end
+	action = (farming.DEBUG and DEBUG_abm_action) or abm_action
 })
+
 
 -- Function to register plants (for compatibility)
 
