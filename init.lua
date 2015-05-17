@@ -7,6 +7,8 @@ farming = {}
 farming.mod = "redo"
 farming.hoe_on_use = default.hoe_on_use
 
+farming.DEBUG = farming.DEBUG or {}
+
 local GrowthModel = dofile(minetest.get_modpath("farming").."/GrowthModel.lua")
 dofile(minetest.get_modpath("farming").."/soil.lua")
 dofile(minetest.get_modpath("farming").."/hoes.lua")
@@ -33,7 +35,8 @@ dofile(minetest.get_modpath("farming").."/compatibility.lua") -- Farming Plus co
 
 -- Used to grow plants with a model of time independent of when the ABM actually runs.
 local growth_model = GrowthModel(13, 1000,  -- light range
-                                 160);      -- average seconds per stage
+                                 12);      -- average seconds per stage
+                                 -- DEBUG 160);      -- average seconds per stage
 
 -- Place Seeds on Soil
 
@@ -67,9 +70,10 @@ function farming.place_seed(itemstack, placer, pointed_thing, plantname)
 	end
 
 	-- add the node and remove 1 item from the itemstack
-	if not minetest.is_protected(pt.above, placer:get_player_name()) then
-		minetest.add_node(pt.above, {name=plantname})
-		growth_model:mark_time(pt.above);  -- Marks initial planting time to avoid extra ABM period
+	local pos = pt.above;
+	if not minetest.is_protected(pos, placer:get_player_name()) then
+		minetest.add_node(pos, {name=plantname})
+		growth_model:mark_time(pos, minetest.get_meta(pos));  -- Marks initial planting time to avoid extra ABM period
 		if not minetest.setting_getbool("creative_mode") then
 			itemstack:take_item()
 		end
@@ -127,17 +131,17 @@ local abm_action = function(pos, node)
 		pos.y = pos.y+1
 	end
 
+	local meta = minetest.get_meta(pos);
+
 	if grow then
-		local growth = growth_model:growth_stages(pos, stage, max_stage);
+		local growth = growth_model:growth_stages(pos, meta, stage, max_stage);
 		if growth > 0 then
 			minetest.set_node(pos, { name = plant.."_"..(stage+growth) });
 		end
 	end
 
-	growth_model:mark_time(pos);
+	growth_model:mark_time(pos, meta);
 end
-
--- farming.DEBUG = farming.DEBUG or {}
 
 local DEBUG_farming_start_time_us = 0
 local DEBUG_farming_end_time_us   = 0
@@ -179,15 +183,32 @@ local DEBUG_abm_action = function(pos, node)
 end
 
 if farming.DEBUG then
-	farming.DEBUG.reportTimes = DEBUG_reportTimes
-	farming.DEBUG.resetTimes = DEBUG_resetTimes
+	local old_reset = farming.DEBUG.resetTimes
+	if old_reset then
+		farming.DEBUG.resetTimes = function()
+			old_reset()
+			DEBUG_resetTimes()
+		end
+	else
+		farming.DEBUG.resetTimes = DEBUG_resetTimes
+	end
+
+	local old_report = farming.DEBUG.reportTimes
+	if old_report then
+		farming.DEBUG.reportTimes = function()
+			DEBUG_reportTimes()
+			old_report()
+		end
+	else
+		farming.DEBUG.reportTimes = DEBUG_reportTimes
+	end
 end
 
 minetest.register_abm({
 	nodenames = {"group:growing"},
 	neighbors = {"farming:soil_wet", "default:jungletree"},
-	interval = 80,
-	chance   = 3,
+	interval = 4, -- DEBUG 80,
+	chance   = 3, -- DEBUG 3,
 	action = (farming.DEBUG and DEBUG_abm_action) or abm_action
 })
 
