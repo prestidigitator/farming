@@ -8,7 +8,7 @@ farming.mod = "redo"
 farming.hoe_on_use = default.hoe_on_use
 
 farming.DEBUG = false
-farming.DEBUG = {}
+-- farming.DEBUG = {}  -- Uncomment to turn on profiling code/functions
 
 local DEBUG_abm_runs   = 0;
 local DEBUG_abm_time   = 0;
@@ -149,10 +149,7 @@ end
 
 -- Growth Logic
 
--- DEBUG
---local STAGE_LENGTH_AVG = 160.0
-
-local STAGE_LENGTH_AVG = 20.0
+local STAGE_LENGTH_AVG = 160.0
 local STAGE_LENGTH_DEV = STAGE_LENGTH_AVG / 6
 local MIN_LIGHT = 13
 local MAX_LIGHT = 1000
