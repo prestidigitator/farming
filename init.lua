@@ -1,10 +1,11 @@
 --[[
-	Minetest Farming Redo Mod 1.14 (19th April 2015)
+	Minetest Farming Redo Mod 1.14 (11th May 2015)
 	by TenPlus1
 ]]
 
 farming = {}
 farming.mod = "redo"
+farming.path = minetest.get_modpath("farming")
 farming.hoe_on_use = default.hoe_on_use
 
 farming.DEBUG = false
@@ -39,29 +40,29 @@ if farming.DEBUG then
 else
 end
 
-local statistics = dofile(minetest.get_modpath("farming").."/statistics.lua")
-dofile(minetest.get_modpath("farming").."/soil.lua")
-dofile(minetest.get_modpath("farming").."/hoes.lua")
-dofile(minetest.get_modpath("farming").."/grass.lua")
-dofile(minetest.get_modpath("farming").."/wheat.lua")
-dofile(minetest.get_modpath("farming").."/cotton.lua")
-dofile(minetest.get_modpath("farming").."/carrot.lua")
-dofile(minetest.get_modpath("farming").."/potato.lua")
-dofile(minetest.get_modpath("farming").."/tomato.lua")
-dofile(minetest.get_modpath("farming").."/cucumber.lua")
-dofile(minetest.get_modpath("farming").."/corn.lua")
-dofile(minetest.get_modpath("farming").."/coffee.lua")
-dofile(minetest.get_modpath("farming").."/melon.lua")
-dofile(minetest.get_modpath("farming").."/sugar.lua")
-dofile(minetest.get_modpath("farming").."/pumpkin.lua")
-dofile(minetest.get_modpath("farming").."/cocoa.lua")
-dofile(minetest.get_modpath("farming").."/raspberry.lua")
-dofile(minetest.get_modpath("farming").."/blueberry.lua")
-dofile(minetest.get_modpath("farming").."/rhubarb.lua")
-dofile(minetest.get_modpath("farming").."/beanpole.lua")
-dofile(minetest.get_modpath("farming").."/donut.lua")
-dofile(minetest.get_modpath("farming").."/mapgen.lua")
-dofile(minetest.get_modpath("farming").."/compatibility.lua") -- Farming Plus compatibility
+local statistics = dofile(farming.path.."/statistics.lua")
+dofile(farming.path.."/soil.lua")
+dofile(farming.path.."/hoes.lua")
+dofile(farming.path.."/grass.lua")
+dofile(farming.path.."/wheat.lua")
+dofile(farming.path.."/cotton.lua")
+dofile(farming.path.."/carrot.lua")
+dofile(farming.path.."/potato.lua")
+dofile(farming.path.."/tomato.lua")
+dofile(farming.path.."/cucumber.lua")
+dofile(farming.path.."/corn.lua")
+dofile(farming.path.."/coffee.lua")
+dofile(farming.path.."/melon.lua")
+dofile(farming.path.."/sugar.lua")
+dofile(farming.path.."/pumpkin.lua")
+dofile(farming.path.."/cocoa.lua")
+dofile(farming.path.."/raspberry.lua")
+dofile(farming.path.."/blueberry.lua")
+dofile(farming.path.."/rhubarb.lua")
+dofile(farming.path.."/beanpole.lua")
+dofile(farming.path.."/donut.lua")
+dofile(farming.path.."/mapgen.lua")
+dofile(farming.path.."/compatibility.lua") -- Farming Plus compatibility
 
 -- Utility Functions
 
@@ -382,6 +383,7 @@ if farming.DEBUG then
 		return unpack(r)
 	end
 end
+
 
 -- Place Seeds on Soil
 
