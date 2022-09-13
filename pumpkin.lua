@@ -213,4 +213,28 @@ minetest.register_node("farming:pumpkin_8", {
 	selection_box = {type = "fixed",fixed = {-0.5, -0.5, -0.5, 0.5, -5/16, 0.5},},
 	groups = {snappy=3,flammable=2,plant=1,not_in_creative_inventory=1},
 	sounds = default.node_sound_defaults(),
+
+-- Pumpkin Pie
+minetest.register_craftitem("farming:pumpkin_pie", {
+	description = ("Pumpkin Pie"),
+	inventory_image = "farming_pumpkin_pie.png",
+	on_use = minetest.item_eat(9)
+})
+
+minetest.register_craftitem("farming:pumpkin_pie_dough", {
+	description = "Pumpkin Pie Dough",
+	inventory_image = "farming_pumpkin_pie_dough.png",
+})
+
+minetest.register_craft({
+	output = "farming:pumpkin_pie",
+	type = "shapeless",
+	recipe = {"farming:flour", "farming:pumpkin_slice", "farming:pumpkin_slice", "farming:sugar"}
+})
+		minetest.register_craft({
+	type = "cooking",
+	output = "farming:pumpkin_pie",
+	recipe = "farming:pumpkin_pie_dough",
+	cooktime = 10
+})
 })
